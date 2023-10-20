@@ -1,6 +1,7 @@
 # --- Custom ---
 .venv
 .nox
+venv_patito/
 
 # --- Auto-generated ---
 # Byte-compiled / optimized / DLL files
