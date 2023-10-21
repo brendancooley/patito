@@ -50,8 +50,8 @@ def test_model_example_df():
 def test_examples():
     class MyModel(pt.Model):
         a: int
-        b: Optional[str]
-        c: Optional[int]
+        b: Optional[str] = None # bump-pydantic rule: BP001
+        c: Optional[int] = None # bump-pydantic rule: BP001
 
     df = MyModel.examples({"a": [1, 2]})
     assert isinstance(df, pl.DataFrame)
@@ -72,7 +72,7 @@ def test_creation_of_empty_relation():
 
     class MyModel(pt.Model):
         a: int
-        b: Optional[str]
+        b: Optional[str] = None # bump-pydantic rule: BP001
 
     db = pt.duckdb.Database()
     empty_relation = db.empty_relation(schema=MyModel)

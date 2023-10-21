@@ -114,8 +114,12 @@ def _enum_type_name(field_properties: dict) -> str:
 
     The same enum values, regardless of ordering, will always be given the same name.
     """
-    enum_values = ", ".join(repr(value) for value in sorted(field_properties["enum"]))
-    value_hash = hashlib.md5(enum_values.encode("utf-8")).hexdigest()  # noqa: #S303
+    enum_values = ", ".join(
+        repr(value) for value in sorted(field_properties["enum"])
+    )
+    value_hash = hashlib.md5(
+        enum_values.encode("utf-8")
+    ).hexdigest()  # noqa: #S303
     return f"enum__{value_hash}"
 
 
@@ -133,7 +137,9 @@ def _is_missing_enum_type_exception(exception: BaseException) -> bool:
     # DuckDB version <= 0.3.4
     old_exception = description.startswith("Not implemented Error: DataType")
     # DuckDB version >= 0.4.0
-    new_exception = description.startswith("Catalog Error: Type with name enum_")
+    new_exception = description.startswith(
+        "Catalog Error: Type with name enum_"
+    )
     return old_exception or new_exception
 
 
@@ -257,12 +263,18 @@ class Relation(Generic[ModelType]):
             derived_from = derived_from.fillna(np.nan)
             relation = self.database.connection.from_df(derived_from)
         elif isinstance(derived_from, pl.DataFrame):
-            relation = self.database.connection.from_arrow(derived_from.to_arrow())
+            relation = self.database.connection.from_arrow(
+                derived_from.to_arrow()
+            )
         elif isinstance(derived_from, Path):
             if derived_from.suffix.lower() == ".parquet":
-                relation = self.database.connection.from_parquet(str(derived_from))
+                relation = self.database.connection.from_parquet(
+                    str(derived_from)
+                )
             elif derived_from.suffix.lower() == ".csv":
-                relation = self.database.connection.from_csv_auto(str(derived_from))
+                relation = self.database.connection.from_csv_auto(
+                    str(derived_from)
+                )
             else:
                 raise ValueError(
                     f"Unsupported file suffix {derived_from.suffix!r} for data import!"
@@ -323,7 +335,9 @@ class Relation(Generic[ModelType]):
         )
         relation = self._relation.aggregate(
             aggr_expr=expression,
-            group_expr=group_by if isinstance(group_by, str) else ", ".join(group_by),
+            group_expr=group_by
+            if isinstance(group_by, str)
+            else ", ".join(group_by),
         )
         return self._wrap(relation=relation, schema_change=True)
 
@@ -378,7 +392,9 @@ class Relation(Generic[ModelType]):
             └──────────┴──────────────────┘
         """
         if include is not None and exclude is not None:
-            raise TypeError("Both include and exclude provided at the same time!")
+            raise TypeError(
+                "Both include and exclude provided at the same time!"
+            )
         elif include is not None:
             included = lambda column: column in include
         elif exclude is not None:
@@ -444,7 +460,9 @@ class Relation(Generic[ModelType]):
             └──────────┴──────────────────┘
         """
         if include is not None and exclude is not None:
-            raise TypeError("Both include and exclude provided at the same time!")
+            raise TypeError(
+                "Both include and exclude provided at the same time!"
+            )
         elif include is not None:
             included = lambda column: column in include
         elif exclude is not None:
@@ -716,7 +734,9 @@ class Relation(Generic[ModelType]):
         for column in self.columns:
             if column in column_expressions:
                 expression = column_expressions[column]
-                projections.append(f"coalesce({column}, {expression!r}) as {column}")
+                projections.append(
+                    f"coalesce({column}, {expression!r}) as {column}"
+                )
             else:
                 projections.append(column)
         return cast(RelationType, self.select(*projections))
@@ -758,7 +778,9 @@ class Relation(Generic[ModelType]):
             >>> len(relation + relation)
             2
         """
-        return cast(Tuple[int], self._relation.aggregate("count(*)").fetchone())[0]
+        return cast(
+            Tuple[int], self._relation.aggregate("count(*)").fetchone()
+        )[0]
 
     def create_table(self: RelationType, name: str) -> RelationType:
         """
@@ -957,7 +979,9 @@ class Relation(Generic[ModelType]):
         # A star-select is here performed in order to work around certain DuckDB bugs
         return self._relation.project("*").execute()
 
-    def get(self, *filters: str, **equalities: Union[str, int, float]) -> ModelType:
+    def get(
+        self, *filters: str, **equalities: Union[str, int, float]
+    ) -> ModelType:
         """
         Fetch the single row that matches the given filter(s).
 
@@ -1038,7 +1062,9 @@ class Relation(Generic[ModelType]):
 
             num_rows = relation.count()
             if num_rows == 0:
-                raise RowDoesNotExist(f"Relation.get({args_string}) returned 0 rows!")
+                raise RowDoesNotExist(
+                    f"Relation.get({args_string}) returned 0 rows!"
+                )
             else:
                 raise MultipleRowsReturned(
                     f"Relation.get({args_string}) returned {num_rows} rows!"
@@ -1119,9 +1145,13 @@ class Relation(Generic[ModelType]):
         if filters:
             clauses.extend(filters)
         if equalities:
-            clauses.extend(f"{key}={value!r}" for key, value in equalities.items())
+            clauses.extend(
+                f"{key}={value!r}" for key, value in equalities.items()
+            )
         filter_string = " and ".join(f"({clause})" for clause in clauses)
-        return self._wrap(self._relation.filter(filter_string), schema_change=False)
+        return self._wrap(
+            self._relation.filter(filter_string), schema_change=False
+        )
 
     def join(
         self: RelationType,
@@ -1196,12 +1226,16 @@ class Relation(Generic[ModelType]):
         """
         return self._wrap(
             self._relation.join(
-                self.database.to_relation(other)._relation, condition=on, how=how
+                self.database.to_relation(other)._relation,
+                condition=on,
+                how=how,
             ),
             schema_change=True,
         )
 
-    def inner_join(self: RelationType, other: RelationSource, on: str) -> RelationType:
+    def inner_join(
+        self: RelationType, other: RelationSource, on: str
+    ) -> RelationType:
         """
         Inner join relation with other relation source based on condition.
 
@@ -1252,7 +1286,9 @@ class Relation(Generic[ModelType]):
             schema_change=True,
         )
 
-    def left_join(self: RelationType, other: RelationSource, on: str) -> RelationType:
+    def left_join(
+        self: RelationType, other: RelationSource, on: str
+    ) -> RelationType:
         """
         Left join relation with other relation source based on condition.
 
@@ -1345,9 +1381,13 @@ class Relation(Generic[ModelType]):
             │ 4      │
             └────────┘
         """
-        return self._wrap(self._relation.limit(n=n, offset=offset), schema_change=False)
+        return self._wrap(
+            self._relation.limit(n=n, offset=offset), schema_change=False
+        )
 
-    def order(self: RelationType, by: Union[str, Iterable[str]]) -> RelationType:
+    def order(
+        self: RelationType, by: Union[str, Iterable[str]]
+    ) -> RelationType:
         """
         Change the order of the rows of the relation.
 
@@ -1551,7 +1591,9 @@ class Relation(Generic[ModelType]):
             if named_projections:
                 # Allow explicitly named projections to overwrite star-selected columns
                 expanded_projections[star_index : star_index + 1] = [
-                    column for column in self.columns if column not in named_projections
+                    column
+                    for column in self.columns
+                    if column not in named_projections
                 ]
             else:
                 expanded_projections[star_index : star_index + 1] = self.columns
@@ -1776,7 +1818,9 @@ class Relation(Generic[ModelType]):
                 else field.name
                 for field in arrow_table.schema
             ]
-            non_enum_relation = self._relation.project(", ".join(casted_columns))
+            non_enum_relation = self._relation.project(
+                ", ".join(casted_columns)
+            )
             arrow_table = non_enum_relation.to_arrow_table()
             return DataFrame._from_arrow(arrow_table).with_columns(
                 pl.col(pl.Int32).cast(pl.Int64)
@@ -1807,7 +1851,9 @@ class Relation(Generic[ModelType]):
                 f"{self.__class__.__name__}.to_series() was invoked on a relation with "
                 f"{len(self._relation.columns)} columns, while exactly 1 is required!"
             )
-        dataframe: DataFrame = DataFrame._from_arrow(self._relation.to_arrow_table())
+        dataframe: DataFrame = DataFrame._from_arrow(
+            self._relation.to_arrow_table()
+        )
         return dataframe.to_series(index=0).alias(name=self.columns[0])
 
     def union(self: RelationType, other: RelationSource) -> RelationType:
@@ -1865,7 +1911,9 @@ class Relation(Generic[ModelType]):
             additional_left = set(self.columns) - set(other_relation.columns)
             additional_right = set(other_relation.columns) - set(self.columns)
             if additional_left:
-                msg += f" Additional columns in left relation: {additional_left}."
+                msg += (
+                    f" Additional columns in left relation: {additional_left}."
+                )
             if additional_right:
                 msg += f" Additional columns in right relation: {additional_right}."
             raise TypeError(msg)
@@ -1970,7 +2018,9 @@ class Relation(Generic[ModelType]):
                 f"You should invoke {class_name}.set_model() first!"
             )
         elif include is not None and exclude is not None:
-            raise TypeError("Both include and exclude provided at the same time!")
+            raise TypeError(
+                "Both include and exclude provided at the same time!"
+            )
 
         missing_columns = set(self.model.columns) - set(self.columns)
         defaultable_columns = self.model.defaults.keys()
@@ -1979,7 +2029,9 @@ class Relation(Generic[ModelType]):
         if exclude is not None:
             missing_defaultable_columns -= set(exclude)
         elif include is not None:
-            missing_defaultable_columns = missing_defaultable_columns & set(include)
+            missing_defaultable_columns = missing_defaultable_columns & set(
+                include
+            )
 
         projection = "*"
         for column_name in missing_defaultable_columns:
@@ -2058,7 +2110,9 @@ class Relation(Generic[ModelType]):
                 f"You should invoke {class_name}.set_model() first!"
             )
         elif include is not None and exclude is not None:
-            raise TypeError("Both include and exclude provided at the same time!")
+            raise TypeError(
+                "Both include and exclude provided at the same time!"
+            )
 
         missing_columns = set(self.model.columns) - set(self.columns)
         missing_nullable_columns = self.model.nullable_columns & missing_columns
@@ -2387,7 +2441,9 @@ class Database:
         return cls.from_connection(duckdb.default_connection)
 
     @classmethod
-    def from_connection(cls, connection: "duckdb.DuckDBPyConnection") -> Database:
+    def from_connection(
+        cls, connection: "duckdb.DuckDBPyConnection"
+    ) -> Database:
         """
         Create database from native DuckDB connection object.
 
@@ -2752,7 +2808,9 @@ class Database:
                 # This enum type has already been created
                 continue
 
-            enum_values = ", ".join(repr(value) for value in sorted(props["enum"]))
+            enum_values = ", ".join(
+                repr(value) for value in sorted(props["enum"])
+            )
             try:
                 self.connection.execute(
                     f"create type {enum_type_name} as enum ({enum_values})"

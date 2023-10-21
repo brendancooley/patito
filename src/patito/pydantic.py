@@ -1092,7 +1092,7 @@ class Model(BaseModel, metaclass=ModelMetaclass):
                 field_default = field.default
                 if how in nullable_methods and type(None) not in get_args(field.type_):
                     # This originally non-nullable field has become nullable
-                    field_type = Optional[field_type]
+                    field_type = Optional[field_type] = None # bump-pydantic: BP001
                 elif field.required and field_default is None:
                     # We need to replace Pydantic's None default value with ... in order
                     # to make it clear that the field is still non-nullable and

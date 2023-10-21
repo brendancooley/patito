@@ -25,7 +25,7 @@ def test_model_example():
         bool_value: bool
         literal_value: Literal["a", "b"]
         default_value: str = "my_default"
-        optional_value: Optional[int]
+        optional_value: Optional[int] = None # bump-pydantic rule: BP001
         bounded_value: int = pt.Field(ge=10, le=20)
         date_value: date
         datetime_value: datetime
@@ -275,11 +275,11 @@ def test_model_joins():
 
     class Left(pt.Model):
         left: int = pt.Field(gt=20)
-        opt_left: Optional[int]
+        opt_left: Optional[int] = None # bump-pydantic rule: BP001
 
     class Right(pt.Model):
         right: int = pt.Field(gt=20)
-        opt_right: Optional[int]
+        opt_right: Optional[int] = None # bump-pydantic rule: BP001
 
     def test_model_validator(model: Type[pt.Model]) -> None:
         """Test if all field validators have been included correctly."""
@@ -321,7 +321,7 @@ def test_model_selects():
     """It should produce models compatible with select statements."""
 
     class MyModel(pt.Model):
-        a: Optional[int]
+        a: Optional[int] = None # bump-pydantic rule: BP001
         b: int = pt.Field(gt=10)
 
     MySubModel = MyModel.select("b")
@@ -347,7 +347,7 @@ def test_model_prefix_and_suffix():
     """It should produce models where all fields have been prefixed/suffixed."""
 
     class MyModel(pt.Model):
-        a: Optional[int]
+        a: Optional[int] = None # bump-pydantic rule: BP001
         b: str
 
     NewModel = MyModel.prefix("pre_").suffix("_post")
@@ -359,7 +359,7 @@ def test_model_field_renaming():
     """It should be able to change its field names."""
 
     class MyModel(pt.Model):
-        a: Optional[int]
+        a: Optional[int] = None # bump-pydantic rule: BP001
         b: str
 
     NewModel = MyModel.rename({"b": "B"})
