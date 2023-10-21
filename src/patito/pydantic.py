@@ -20,7 +20,7 @@ from typing import (
 
 import polars as pl
 from polars.datatypes import PolarsDataType
-from pydantic import BaseConfig, BaseModel, Field, create_model  # noqa: F401
+from pydantic import BaseModel, Field, create_model  # noqa: F401
 from pydantic.main import ModelMetaclass as PydanticModelMetaclass
 from typing_extensions import Literal, get_args
 
@@ -107,7 +107,7 @@ class ModelMetaclass(PydanticModelMetaclass):
             >>> Product.columns
             ['name', 'price']
         """
-        return list(cls.schema()["properties"].keys())
+        return list(cls.model_json_schema()["properties"].keys())
 
     @property
     def dtypes(  # type: ignore
@@ -460,7 +460,7 @@ class ModelMetaclass(PydanticModelMetaclass):
             >>> sorted(MyModel.non_nullable_columns)
             ['another_non_nullable_field', 'non_nullable_field']
         """
-        return set(cls.schema().get("required", {}))
+        return set(cls.model_json_schema().get("required", {}))
 
     @property
     def nullable_columns(  # type: ignore
@@ -1332,7 +1332,7 @@ class Model(BaseModel, metaclass=ModelMetaclass):
             TypeError: if a field is annotated with an enum where the values are of
                 different types.
         """
-        schema = cls.schema(ref_template="{model}")
+        schema = cls.model_json_schema(ref_template="{model}")
         required = schema.get("required", set())
         fields = {}
         for field_name, field_info in schema["properties"].items():

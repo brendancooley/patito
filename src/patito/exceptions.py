@@ -1,15 +1,16 @@
 """Module containing all custom exceptions raised by patito."""
 
-import pydantic
-
-
-class ValidationError(pydantic.ValidationError):
+class ValidationError(Exception):
     """Exception raised when dataframe does not match schema."""
+    def __init__(self, message, errors):
+        super().__init__(message)
+        self.errors = errors
 
-
-class ErrorWrapper(pydantic.ValidationError):
+class ErrorWrapper(Exception):
     """Wrapper for specific column validation error."""
-
+    def __init__(self, message, errors):
+        super().__init__(message)
+        self.errors = errors
 
 class WrongColumnsError(TypeError):
     """Validation exception for column name mismatches."""
