@@ -17,3 +17,11 @@ repos:
         entry: poetry run flake8
         language: system
         types: [python]
+-   repo: https://github.com/commitizen-tools/commitizen
+    rev: v3.10.0
+    hooks:
+    -    id: commitizen
+    stages: [commit-msg]
+
+# Setup
+# > pre-commit install --hook-type commit-msg
