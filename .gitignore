@@ -2,6 +2,7 @@
 .venv
 .nox
 venv_patito/
+dev.ipynb
 
 # --- Auto-generated ---
 # Byte-compiled / optimized / DLL files
