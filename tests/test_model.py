@@ -58,13 +58,13 @@ def test_model_example():
         "datetime_value": datetime(year=1970, month=1, day=1),
     }
 
-    # For now, valid regex data is not implemented
-    class RegexModel(pt.Model):
-        regex_column: str = pt.Field(regex=r"[0-9a-f]")
+    # For now, valid pattern data is not implemented
+    class patternModel(pt.Model):
+        pattern_column: str = pt.Field(pattern=r"[0-9a-f]")
 
     with pytest.raises(
         NotImplementedError,
-        match="Example data generation has not been implemented for regex.*",
+        match="Example data generation has not been implemented for pattern.*",
     ):
         RegexModel.example()
 

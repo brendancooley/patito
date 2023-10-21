@@ -792,7 +792,7 @@ class Model(BaseModel, metaclass=ModelMetaclass):
         elif field_type == "string":
             if "pattern" in properties:
                 raise NotImplementedError(
-                    "Example data generation has not been implemented for regex "
+                    "Example data generation has not been implemented for pattern "
                     "patterns. You must valid data for such columns explicitly!"
                 )
             elif "format" in properties and properties["format"] == "date":
@@ -1433,7 +1433,7 @@ class FieldDoc:
         multiple_of: All values must be multiples of the given value.
         const (bool): If set to ``True`` `all` values must be equal to the provided
             default value, the first argument provided to the ``Field`` constructor.
-        regex (str): UTF-8 string column must match regex pattern for all row values.
+        pattern (str): UTF-8 string column must match pattern pattern for all row values.
         min_length (int): Minimum length of all string values in a UTF-8 column.
         max_length (int): Maximum length of all string values in a UTF-8 column.
 
@@ -1455,7 +1455,7 @@ class FieldDoc:
         ...     name: str = pt.Field(min_length=3, max_length=128)
         ...
         ...     # Represent colors in the form of upper cased hex colors
-        ...     brand_color: str = pt.Field(regex=r"^\\#[0-9A-F]{6}$")
+        ...     brand_color: str = pt.Field(pattern=r"^\\#[0-9A-F]{6}$")
         ...
         >>> Product.DataFrame(
         ...     {

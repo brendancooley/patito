@@ -7,7 +7,7 @@ class ValidationError(pydantic.ValidationError):
     """Exception raised when dataframe does not match schema."""
 
 
-class ErrorWrapper(pydantic.error_wrappers.ErrorWrapper):
+class ErrorWrapper(pydantic.ValidationError):
     """Wrapper for specific column validation error."""
 
 

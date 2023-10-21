@@ -109,8 +109,8 @@ Additonally, you can assign `patito.Field` to your class variables in order to s
 * `Field(unique=True)` checks if every row has a unique value.
 * `Field(gt=..., ge=..., le=..., lt=...)` allows you to specify bound checks for any combination of `> gt`, `>= ge`, `<= le` `< lt`, respectively.
 * `Field(multiple_of=divisor)` in order to check if a given column only contains values as multiples of the given value.
-* `Field(default=default_value, const=True)` indicates that the given column is required and _must_ take the given default value.
-* String fields annotated with `Field(regex=r"<regex-pattern>")`, `Field(max_length=bound)`, and/or `Field(min_length)` will be validated with [polars' efficient string processing capabilities](https://pola-rs.github.io/polars-book/user-guide/howcani/data/strings.html).
+* `Field(default=default_value)` indicates that the given column is required and _must_ take the given default value.
+* String fields annotated with `Field(pattern=r"<pattern-pattern>")`, `Field(max_length=bound)`, and/or `Field(min_length)` will be validated with [polars' efficient string processing capabilities](https://pola-rs.github.io/polars-book/user-guide/howcani/data/strings.html).
 * Custom constraints can be specified with with `Field(constraints=...)`, either as a single polars expression or a list of expressions. All the rows of the dataframe must satisfy the given constraint(s) in order to be considered valid. Example: `even_field: int = pt.Field(constraints=pl.col("even_field") % 2 == 0)`.
 
 Although Patito supports [pandas](https://github.com/pandas-dev/pandas), it is highly recommemended to be used in combination with [polars]("https://github.com/pola-rs/polars").
@@ -212,7 +212,7 @@ product = (
     products
     # Specify the schema of the given data frame
     .set_model(Product)
-    # Derive the `eurocent_cost` int column from the `cost` string column using regex
+    # Derive the `eurocent_cost` int column from the `cost` string column using pattern
     .derive()
     # Drop the `cost` column as it is not part of the model
     .drop()
