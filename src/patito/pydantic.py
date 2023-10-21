@@ -594,7 +594,7 @@ class Model(BaseModel, metaclass=ModelMetaclass):
         elif _PANDAS_AVAILABLE and isinstance(row, pd.DataFrame):
             dataframe = pl.DataFrame._from_pandas(row)
         elif _PANDAS_AVAILABLE and isinstance(row, pd.Series):  # type: ignore[unreachable]
-            return cls(**dict(row.items()))  # type: ignore[unreachable]
+            return cls(**model_dump(row.items()))  # type: ignore[unreachable]
         else:
             raise TypeError(f"{cls.__name__}.from_row not implemented for {type(row)}.")
         return cls._from_polars(dataframe=dataframe, validate=validate)
@@ -657,7 +657,7 @@ class Model(BaseModel, metaclass=ModelMetaclass):
         if validate:
             return cls(**dataframe.to_dicts()[0])
         else:
-            return cls.construct(**dataframe.to_dicts()[0])
+            return cls.model_construct(**dataframe.to_dicts()[0])
 
     @classmethod
     def validate(
@@ -917,7 +917,7 @@ class Model(BaseModel, metaclass=ModelMetaclass):
                     f"{cls.__name__}.pandas_examples() must "
                     "be provided with column names!"
                 )
-            kwargs = dict(zip(columns, zip(*data)))
+            kwargs = model_dump(zip(columns, zip(*data)))
         else:
             kwargs = data
 
@@ -931,8 +931,8 @@ class Model(BaseModel, metaclass=ModelMetaclass):
         }
         dummies = []
         for values in zip(*kwargs.values()):
-            dummies.append(cls.example(**dict(zip(kwargs.keys(), values))))
-        return pd.DataFrame([dummy.dict() for dummy in dummies])
+            dummies.append(cls.example(**model_dump(zip(kwargs.keys(), values))))
+        return pd.DataFrame([dummy.model_dump() for dummy in dummies])
 
     @classmethod
     def examples(
@@ -1000,7 +1000,7 @@ class Model(BaseModel, metaclass=ModelMetaclass):
                 raise TypeError(
                     f"{cls.__name__}.examples() must be provided with column names!"
                 )
-            kwargs = dict(zip(columns, zip(*data)))
+            kwargs = model_dump(zip(columns, zip(*data)))
         else:
             kwargs = data
 
@@ -1087,7 +1087,7 @@ class Model(BaseModel, metaclass=ModelMetaclass):
             (cls, {"outer"}),
             (other, {"left", "outer", "asof"}),
         ):
-            for field_name, field in model.__fields__.items():
+            for field_name, field in model.model_fields.items():
                 field_type = field.type_
                 field_default = field.default
                 if how in nullable_methods and type(None) not in get_args(field.type_):
@@ -1388,7 +1388,7 @@ class Model(BaseModel, metaclass=ModelMetaclass):
             if isinstance(field_definition, str):
                 # A single string, interpreted as the name of a field on the existing
                 # model.
-                old_field = cls.__fields__[field_definition]
+                old_field = cls.model_fields[field_definition]
                 field_type = old_field.type_
                 field_default = old_field.default
                 if old_field.required and field_default is None:
@@ -1402,7 +1402,7 @@ class Model(BaseModel, metaclass=ModelMetaclass):
                 new_fields[new_field_name] = field_definition
         return create_model(  # type: ignore
             __model_name=model_name,
-            __validators__={"__validators__": cls.__validators__},
+            __pydantic_validator__={"__pydantic_validator__": cls.__pydantic_validator__},
             __base__=Model,
             **new_fields,
         )

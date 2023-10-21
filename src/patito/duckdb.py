@@ -865,7 +865,7 @@ class Relation(Generic[ModelType]):
             >>> relation.drop("b", "c").columns
             ['a']
         """
-        new_columns = self.columns.copy()
+        new_columns = self.columns.model_copy()
         for column in columns:
             new_columns.remove(column)
         return self[new_columns]
@@ -1758,7 +1758,7 @@ class Relation(Generic[ModelType]):
             >>> pt.duckdb.Relation("select 1 as a, 'my_value' as b").types
             {'a': INTEGER, 'b': VARCHAR}
         """
-        return dict(zip(self.columns, self._relation.types))
+        return model_dump(zip(self.columns, self._relation.types))
 
     def to_pandas(self) -> "pd.DataFrame":
         """

@@ -5,12 +5,11 @@ import re
 from datetime import date, datetime, timedelta
 from typing import List, Optional, Type
 
+import patito as pt
 import polars as pl
 import pytest
 from pydantic import ValidationError
 from typing_extensions import Literal
-
-import patito as pt
 
 
 def test_model_example():
@@ -30,7 +29,7 @@ def test_model_example():
         date_value: date
         datetime_value: datetime
 
-    assert MyModel.example().dict() == {
+    assert MyModel.example().model_dump() == {
         "int_value": -1,
         "float_value": -0.5,
         "str_value": "dummy_string",
@@ -46,7 +45,7 @@ def test_model_example():
         bool_value=True,
         default_value="override",
         optional_value=1,
-    ).dict() == {
+    ).model_dump() == {
         "int_value": -1,
         "float_value": -0.5,
         "str_value": "dummy_string",

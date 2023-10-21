@@ -353,7 +353,7 @@ class Database:
         ...     cursor = dummy_database()
         ...     cursor.execute(query)
         ...     columns = [description[0] for description in cursor.description]
-        ...     data = [dict(zip(columns, row)) for row in cursor.fetchall()]
+        ...     data = [model_dump(zip(columns, row)) for row in cursor.fetchall()]
         ...     return pa.Table.from_pylist(data)
 
         We can now construct a ``Database`` object, providing ``query_handler``
