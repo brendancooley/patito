@@ -1,3 +1,11 @@
+## v0.6.2 (2023-10-31)
+
+### Fix
+
+- update LDF.collect() for polars==0.19.8
+- switch to *args/**kwargs
+- `DataFrameValidationError` mirrors pydantic v1 `ValidationError`
+
 ## v0.6.1 (2023-10-21)
 
 ### Fix
