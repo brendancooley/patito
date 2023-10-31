@@ -3,13 +3,12 @@
 import enum
 import re
 from datetime import date, datetime, timedelta
-from typing import List, Optional, Type
+from typing import List, Optional, Type, Literal
 
 import patito as pt
 import polars as pl
 import pytest
 from pydantic import ValidationError
-from typing_extensions import Literal
 
 
 def test_model_example():
@@ -24,7 +23,7 @@ def test_model_example():
         bool_value: bool
         literal_value: Literal["a", "b"]
         default_value: str = "my_default"
-        optional_value: Optional[int] = None # bump-pydantic rule: BP001
+        optional_value: Optional[int] = None  # bump-pydantic rule: BP001
         bounded_value: int = pt.Field(ge=10, le=20)
         date_value: date
         datetime_value: datetime
@@ -58,9 +57,9 @@ def test_model_example():
         "datetime_value": datetime(year=1970, month=1, day=1),
     }
 
-    # For now, valid pattern data is not implemented
-    class patternModel(pt.Model):
-        pattern_column: str = pt.Field(pattern=r"[0-9a-f]")
+    # For now, valid regex data is not implemented
+    class RegexModel(pt.Model):
+        regex_column: str = pt.Field(pattern=r"[0-9a-f]")
 
     with pytest.raises(
         NotImplementedError,
@@ -126,7 +125,8 @@ def test_instantiating_model_from_row():
 
     # Anything besides a dataframe / row should raise TypeError
     with pytest.raises(
-        TypeError, match=r"Model.from_row not implemented for \<class 'NoneType'\>."
+        TypeError,
+        match=r"Model.from_row not implemented for \<class 'NoneType'\>.",
     ):
         Model.from_row(None)  # pyright: ignore
 
@@ -274,40 +274,57 @@ def test_model_joins():
 
     class Left(pt.Model):
         left: int = pt.Field(gt=20)
-        opt_left: Optional[int] = None # bump-pydantic rule: BP001
+        opt_left: Optional[int] = None
 
     class Right(pt.Model):
         right: int = pt.Field(gt=20)
-        opt_right: Optional[int] = None # bump-pydantic rule: BP001
+        opt_right: Optional[int] = None
 
     def test_model_validator(model: Type[pt.Model]) -> None:
         """Test if all field validators have been included correctly."""
-        with pytest.raises(
-            ValidationError,
-            match=re.compile(
-                r".*limit_value=20.*\n.*\n.*limit_value=20.*", re.MULTILINE
-            ),
-        ):
+        with pytest.raises(ValidationError) as e:
             model(left=1, opt_left=1, right=1, opt_right=1)
+        pattern = re.compile(r"Input should be greater than 20")
+        assert len(pattern.findall(str(e.value))) == 2
 
     # An inner join should keep nullability information
     InnerJoinModel = Left.join(Right, how="inner")
-    assert set(InnerJoinModel.columns) == {"left", "opt_left", "right", "opt_right"}
+    assert set(InnerJoinModel.columns) == {
+        "left",
+        "opt_left",
+        "right",
+        "opt_right",
+    }
     assert InnerJoinModel.nullable_columns == {"opt_left", "opt_right"}
     assert InnerJoinModel.__name__ == "LeftInnerJoinRight"
     test_model_validator(InnerJoinModel)
 
     # Left joins should make all fields on left model nullable
     LeftJoinModel = Left.join(Right, how="left")
-    assert set(LeftJoinModel.columns) == {"left", "opt_left", "right", "opt_right"}
+    assert set(LeftJoinModel.columns) == {
+        "left",
+        "opt_left",
+        "right",
+        "opt_right",
+    }
     assert LeftJoinModel.nullable_columns == {"opt_left", "right", "opt_right"}
     assert LeftJoinModel.__name__ == "LeftLeftJoinRight"
     test_model_validator(LeftJoinModel)
 
     # Outer joins should make all columns nullable
     OuterJoinModel = Left.join(Right, how="outer")
-    assert set(OuterJoinModel.columns) == {"left", "opt_left", "right", "opt_right"}
-    assert OuterJoinModel.nullable_columns == {"left", "opt_left", "right", "opt_right"}
+    assert set(OuterJoinModel.columns) == {
+        "left",
+        "opt_left",
+        "right",
+        "opt_right",
+    }
+    assert OuterJoinModel.nullable_columns == {
+        "left",
+        "opt_left",
+        "right",
+        "opt_right",
+    }
     assert OuterJoinModel.__name__ == "LeftOuterJoinRight"
     test_model_validator(OuterJoinModel)
 
@@ -320,19 +337,23 @@ def test_model_selects():
     """It should produce models compatible with select statements."""
 
     class MyModel(pt.Model):
-        a: Optional[int] = None # bump-pydantic rule: BP001
+        a: Optional[int] = None  # bump-pydantic rule: BP001
         b: int = pt.Field(gt=10)
 
     MySubModel = MyModel.select("b")
     assert MySubModel.columns == ["b"]
     MySubModel(b=11)
-    with pytest.raises(ValidationError, match="limit_value=10"):
+    with pytest.raises(
+        ValidationError, match="Input should be greater than 10"
+    ):
         MySubModel(b=1)
 
     MyTotalModel = MyModel.select(["a", "b"])
     assert sorted(MyTotalModel.columns) == ["a", "b"]
     MyTotalModel(a=1, b=11)
-    with pytest.raises(ValidationError, match="limit_value=10"):
+    with pytest.raises(
+        ValidationError, match="Input should be greater than 10"
+    ):
         MyTotalModel(a=1, b=1)
     assert MyTotalModel.nullable_columns == {"a"}
 
@@ -346,7 +367,7 @@ def test_model_prefix_and_suffix():
     """It should produce models where all fields have been prefixed/suffixed."""
 
     class MyModel(pt.Model):
-        a: Optional[int] = None # bump-pydantic rule: BP001
+        a: Optional[int] = None  # bump-pydantic rule: BP001
         b: str
 
     NewModel = MyModel.prefix("pre_").suffix("_post")
@@ -358,7 +379,7 @@ def test_model_field_renaming():
     """It should be able to change its field names."""
 
     class MyModel(pt.Model):
-        a: Optional[int] = None # bump-pydantic rule: BP001
+        a: Optional[int] = None  # bump-pydantic rule: BP001
         b: str
 
     NewModel = MyModel.rename({"b": "B"})
@@ -425,5 +446,37 @@ def test_enum_annotated_field():
 
     if pt._DUCKDB_AVAILABLE:  # pragma: no cover
         assert EnumModel.sql_types["column"].startswith("enum__")
-        with pytest.raises(TypeError, match=r".*Encountered types: \['int', 'str'\]\."):
+        with pytest.raises(
+            TypeError, match=r".*Encountered types: \['int', 'str'\]\."
+        ):
             InvalidEnumModel.sql_types
+
+
+def test_pt_fields():
+    class Model(pt.Model):
+        a: int
+        b: int = pt.Field(constraints=[(pl.col("b") < 10)])
+        c: int = pt.Field(derived_from=pl.col("a") + pl.col("b"))
+        d: int = pt.Field(dtype=pl.UInt8)
+        e: int = pt.Field(unique=True)
+
+    schema = Model.model_json_schema()  # no serialization issues
+    props = (
+        Model._schema_properties()
+    )  # extra fields are stored in modified schema_properties
+    assert "constraints" in props["b"]
+    assert "derived_from" in props["c"]
+    assert "dtype" in props["d"]
+    assert "unique" in props["e"]
+
+    fields = (
+        Model.model_fields
+    )  # attributes are properly set and catalogued on the `FieldInfo` objects
+    assert "constraints" in fields["b"]._attributes_set
+    assert fields["b"].constraints is not None
+    assert "derived_from" in fields["c"]._attributes_set
+    assert fields["c"].derived_from is not None
+    assert "dtype" in fields["d"]._attributes_set
+    assert fields["d"].dtype is not None
+    assert "unique" in fields["e"]._attributes_set
+    assert fields["e"].unique is not None
