@@ -1,18 +1,17 @@
-import json
 from typing import (
     TYPE_CHECKING,
     Any,
+    Callable,
     Dict,
     Generator,
+    Iterable,
     List,
     Optional,
     Sequence,
     Tuple,
     Type,
-    Union,
-    Callable,
     TypedDict,
-    Iterable,
+    Union,
 )
 
 if TYPE_CHECKING:

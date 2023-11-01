@@ -125,9 +125,6 @@ setuptools = {version = "*", markers = "python_version >= \"3.12\""}
 [package.extras]
 dev = ["freezegun (>=1.0,<2.0)", "pytest (>=6.0)", "pytest-cov"]
 
-[package.extras]
-dev = ["freezegun (>=1.0,<2.0)", "pytest (>=6.0)", "pytest-cov"]
-
 [[package]]
 name = "bandit"
 version = "1.7.5"

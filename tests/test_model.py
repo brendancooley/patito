@@ -3,12 +3,15 @@
 import enum
 import re
 from datetime import date, datetime, timedelta
-from typing import List, Optional, Type, Literal
+from typing import List, Optional, Type, Literal, Sequence
 
 import patito as pt
 import polars as pl
 import pytest
 from pydantic import ValidationError
+
+import patito as pt
+from patito.pydantic import PL_INTEGER_DTYPES
 
 
 def test_model_example():
@@ -480,3 +483,52 @@ def test_pt_fields():
     assert fields["d"].dtype is not None
     assert "unique" in fields["e"]._attributes_set
     assert fields["e"].unique is not None
+
+
+def test_model_schema():
+    class Model(pt.Model):
+        a: int = pt.Field(ge=0, unique=True)
+
+    schema = Model.schema()
+
+    def validate_model_schema(schema):
+        assert set(schema) == {"properties", "required", "type", "title"}
+        assert schema["title"] == "Model"
+        assert schema["type"] == "object"
+        assert "a" in schema["properties"]
+        assert schema["properties"]["a"]["type"] == "integer"
+        assert schema["properties"]["a"]["minimum"] == 0
+        assert schema["properties"]["a"][
+            "unique"
+        ]  # patito-specific properties are recorded
+
+    validate_model_schema(schema)
+
+    # nested models
+    class ParentModel(pt.Model):
+        a: int
+        b: Model
+        c: Optional[float] = None
+
+    schema = ParentModel.schema()
+    validate_model_schema(
+        schema["$defs"]["Model"]
+    )  # ensure that nested model schema is recorded in definitions
+    validate_model_schema(
+        schema["properties"]["b"]
+    )  # and all info is copied into field properties
+    assert set(schema["properties"]) == {"a", "b", "c"}
+    assert schema["properties"]["a"]["required"]
+    assert schema["properties"]["b"]["required"]
+    assert schema["properties"]["a"]["type"] == "integer"
+    assert not schema["properties"]["c"]["required"]
+
+    class ParentModel(pt.Model):
+        parent_field: int
+        nested_models: Optional[Sequence[Model]] = None
+
+    valid_dtypes = ParentModel.valid_dtypes
+    assert valid_dtypes["parent_field"] == PL_INTEGER_DTYPES
+    assert set(valid_dtypes["nested_models"]) == set(
+        [pl.List(pl.Object), pl.Null]
+    )

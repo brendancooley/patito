@@ -15,12 +15,12 @@ from typing import (
     TypeVar,
     Union,
     cast,
+    Literal,
 )
 
 import polars as pl
 from polars.type_aliases import IntoExpr
 from pydantic import create_model
-from typing_extensions import Literal
 
 from patito.exceptions import MultipleRowsReturned, RowDoesNotExist
 
@@ -407,7 +407,7 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
             │ 1   ┆ 1   ┆ 2          │
             │ 2   ┆ 2   ┆ 4          │
             └─────┴─────┴────────────┘
-        
+
             Execution order will be inferred from the field dependencies (roots), but data frame will be returned in the order given by the model:
             >>> class Foo(pt.Model):
             ...     bar: int = pt.Field(derived_from="foo")
@@ -424,7 +424,7 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
             │ 1   ┆ 1   ┆ 4        ┆ 2          │
             │ 2   ┆ 2   ┆ 8        ┆ 4          │
             └─────┴─────┴──────────┴────────────┘
-            
+
         """
         df = self.lazy()
         derived_columns = []
@@ -435,7 +435,9 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
                 derived_columns.extend(_derived_columns)
         return cast(DF, df.select(props.keys()).collect())
 
-    def _derive_column(self, df: "LDF", column_name: str, props: Mapping[str, Any]) -> Tuple["DF", Sequence[str]]:
+    def _derive_column(
+        self, df: "LDF", column_name: str, props: Mapping[str, Any]
+    ) -> Tuple["DF", Sequence[str]]:
         props_col = props[column_name]
         if "derived_from" not in props_col:
             return df, []
@@ -443,9 +445,7 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
         dtype = self.model.dtypes[column_name]
         derived_columns = []
         if isinstance(derived_from, str):
-            df = df.with_columns(
-                pl.col(derived_from).cast(dtype).alias(column_name)
-            )
+            df = df.with_columns(pl.col(derived_from).cast(dtype).alias(column_name))
         elif isinstance(derived_from, pl.Expr):
             root_cols = derived_from.meta.root_names()
             while root_cols:
@@ -455,8 +455,7 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
             df = df.with_columns(derived_from.cast(dtype).alias(column_name))
         else:
             raise TypeError(
-                "Can not derive dataframe column from type "
-                f"{type(derived_from)}."
+                "Can not derive dataframe column from type " f"{type(derived_from)}."
             )
         derived_columns.append(column_name)
         return df, derived_columns
@@ -525,6 +524,8 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
         return self.with_columns(
             [
                 pl.col(column).fill_null(pl.lit(default_value))
+                if column in self.columns
+                else pl.lit(default_value).alias(column)
                 for column, default_value in self.model.defaults.items()
             ]
         ).set_model(self.model)
@@ -697,8 +698,13 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
         kwargs.setdefault("dtypes", cls.model.dtypes)
         if not kwargs.get("has_header", True) and "columns" not in kwargs:
             kwargs.setdefault("new_columns", cls.model.columns)
-        df = cls.model.DataFrame._from_pydf(pl.read_csv(*args, **kwargs)._df)
-        return df.derive()
+        df = cls.from_existing(pl.read_csv(*args, **kwargs))
+        return df.derive()  # TODO delegate derivations to user?
+
+    @classmethod
+    def from_existing(cls, df: pl.DataFrame):
+        """Constructs a patito.DataFrame object from an existing polars.DataFrame object"""
+        return cls.model.DataFrame._from_pydf(df._df).cast()
 
     # --- Type annotation overrides ---
     def filter(  # noqa: D102

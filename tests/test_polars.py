@@ -1,5 +1,6 @@
 """Tests related to polars functionality."""
 import re
+from typing import Optional
 from datetime import date, datetime
 
 import polars as pl
@@ -66,6 +67,20 @@ def test_fill_nan_with_defaults():
     missing_df = pt.DataFrame({"foo": [1, None], "bar": [None, "provided"]})
     filled_df = missing_df.set_model(DefaultModel).fill_null(strategy="defaults")
     correct_filled_df = pt.DataFrame({"foo": [1, 2], "bar": ["default", "provided"]})
+    assert filled_df.frame_equal(correct_filled_df)
+
+
+def test_create_missing_columns_with_defaults():
+    """columns that have default values should be created if they are missing."""
+
+    class DefaultModel(pt.Model):
+        foo: int = 2
+        bar: Optional[str] = "default"
+
+    missing_df = pt.DataFrame({"foo": [1, 2]})
+    filled_df = missing_df.set_model(DefaultModel).fill_null(strategy="defaults")
+    correct_filled_df = pt.DataFrame({"foo": [1, 2], "bar": ["default", "default"]})
+    assert "bar" in filled_df.columns
     assert filled_df.frame_equal(correct_filled_df)
 
 
@@ -207,7 +222,13 @@ def test_derive_functionality():
         column_derived: int = pt.Field(derived_from="underived")
         expr_derived: int = pt.Field(derived_from=2 * pl.col("underived"))
         second_order_derived: int = pt.Field(derived_from=2 * pl.col("expr_derived"))
-        
+
+    assert DerivedModel.derived_columns == {
+        "const_derived",
+        "column_derived",
+        "expr_derived",
+        "second_order_derived",
+    }
 
     df = DerivedModel.DataFrame({"underived": [1, 2]})
     assert df.columns == ["underived"]
@@ -232,7 +253,7 @@ def test_derive_functionality():
         match=r"Can not derive dataframe column from type \<class 'type'\>\.",
     ):
         InvalidModel.DataFrame().derive()
-    
+
 
 def test_recursive_derive():
     """Data.Frame.derive() infers proper derivation order and executes it, then returns columns in the order given by the model."""
@@ -240,24 +261,30 @@ def test_recursive_derive():
     class DerivedModel(pt.Model):
         underived: int
         const_derived: int = pt.Field(derived_from=pl.lit(3))
-        second_order_derived: int = pt.Field(derived_from=2 * pl.col("expr_derived"))  # requires expr_derived to be derived first
+        second_order_derived: int = pt.Field(
+            derived_from=2 * pl.col("expr_derived")
+        )  # requires expr_derived to be derived first
         column_derived: int = pt.Field(derived_from="underived")
         expr_derived: int = pt.Field(derived_from=2 * pl.col("underived"))
-    
+
     df = DerivedModel.DataFrame({"underived": [1, 2]})
     assert df.columns == ["underived"]
     derived_df = df.derive()
-    
+
     correct_derived_df = DerivedModel.DataFrame(
         {
             "underived": [1, 2],
             "const_derived": [3, 3],
             "second_order_derived": [4, 8],
             "column_derived": [1, 2],
-            "expr_derived": [2, 4],  # derived before second_order_derived, but remains in last position in output df according to the model
+            "expr_derived": [
+                2,
+                4,
+            ],  # derived before second_order_derived, but remains in last position in output df according to the model
         }
     )
     assert derived_df.frame_equal(correct_derived_df)
+
 
 def test_drop_method():
     """We should be able to drop columns not specified by the data frame model."""
