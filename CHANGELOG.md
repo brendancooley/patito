@@ -1,3 +1,10 @@
+## v0.7.0 (2023-11-01)
+
+### Fix
+
+- better nested dtype discovery (#9)
+- optional nested models are ok (#5)
+
 ## v0.6.2 (2023-10-31)
 
 ### Fix
