@@ -1,3 +1,9 @@
+## v0.7.1 (2023-11-01)
+
+### Fix
+
+- **commitizen**: using `pep440` instead of `semVer`
+
 ## v0.7.0 (2023-11-01)
 
 ### Fix
