@@ -1,3 +1,9 @@
+## v0.7.2 (2023-11-02)
+
+### Fix
+
+- **publish**: package renamed to `humblpatito`
+
 ## v0.7.1 (2023-11-01)
 
 ### Fix
