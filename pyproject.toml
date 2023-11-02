@@ -10,7 +10,7 @@ repository = "https://github.com/kolonialno/patito"
 documentation = "https://patito.readthedocs.io"
 keywords = ["validation", "dataframe"]
 packages = [
-    { include = "patito", from = "src" }
+    { include = "humblpatito", from = "src" }
 ]
 
 [tool.poetry.dependencies]
