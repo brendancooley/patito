@@ -7,31 +7,25 @@ from datetime import date, datetime
 from typing import (
     TYPE_CHECKING,
     Any,
-    ClassVar,
     Dict,
     List,
+    Literal,
     Optional,
-    Set,
+    Sequence,
+    Tuple,
     Type,
     TypeVar,
     Union,
     cast,
-    Literal,
     get_args,
-    Sequence,
-    Tuple,
 )
 
 import polars as pl
 from polars.datatypes import PolarsDataType
-from pydantic import fields
-from pydantic import ConfigDict, BaseModel, create_model  # noqa: F401
-from pydantic._internal._model_construction import (
-    ModelMetaclass as PydanticModelMetaclass,
-)
+from pydantic import BaseModel, ConfigDict, create_model, fields  # noqa: F401
 
-from patito.polars import DataFrame, LazyFrame
-from patito.validators import validate
+from humblpatito.polars import DataFrame, LazyFrame
+from humblpatito.validators import validate
 
 try:
     import pandas as pd
@@ -41,9 +35,8 @@ except ImportError:
     _PANDAS_AVAILABLE = False
 
 if TYPE_CHECKING:
-    import patito.polars
-    from patito.duckdb import DuckDBSQLType
-    from pydantic.typing import CallableGenerator
+    import humblpatito.polars
+    from humblpatito.duckdb import DuckDBSQLType
 
 # The generic type of a single row in given Relation.
 # Should be a typed subclass of Model.
@@ -109,7 +102,7 @@ class Model(BaseModel):
             List of column names.
 
         Example:
-            >>> import patito as pt
+            >>> import humblpatito as pt
             >>> class Product(pt.Model):
             ...     name: str
             ...     price: int
@@ -134,7 +127,7 @@ class Model(BaseModel):
             A dictionary mapping string column names to polars dtype classes.
 
         Example:
-            >>> import patito as pt
+            >>> import humblpatito as pt
             >>> class Product(pt.Model):
             ...     name: str
             ...     ideal_temperature: int
@@ -154,9 +147,9 @@ class Model(BaseModel):
         cls: Type[ModelType],  # pyright: ignore
     ) -> dict[str, List[Union[pl.PolarsDataType, pl.List]]]:
         """
-        Return a list of polars dtypes which Patito considers valid for each field.
+        Return a list of polars dtypes which humblpatito considers valid for each field.
 
-        The first item of each list is the default dtype chosen by Patito.
+        The first item of each list is the default dtype chosen by humblpatito.
 
         Returns:
             A dictionary mapping each column string name to a list of valid dtypes.
@@ -167,7 +160,7 @@ class Model(BaseModel):
 
         Example:
             >>> from pprint import pprint
-            >>> import patito as pt
+            >>> import humblpatito as pt
 
             >>> class MyModel(pt.Model):
             ...     bool_column: bool
@@ -280,9 +273,9 @@ class Model(BaseModel):
         cls: Type[ModelType],  # pyright: ignore
     ) -> dict[str, List["DuckDBSQLType"]]:
         """
-        Return a list of DuckDB SQL types which Patito considers valid for each field.
+        Return a list of DuckDB SQL types which humblpatito considers valid for each field.
 
-        The first item of each list is the default dtype chosen by Patito.
+        The first item of each list is the default dtype chosen by humblpatito.
 
         Returns:
             A dictionary mapping each column string name to a list of DuckDB SQL types
@@ -293,7 +286,7 @@ class Model(BaseModel):
                 not compatible with DuckDB.
 
         Example:
-            >>> import patito as pt
+            >>> import humblpatito as pt
             >>> from pprint import pprint
 
             >>> class MyModel(pt.Model):
@@ -337,7 +330,7 @@ class Model(BaseModel):
                     props["sql_type"],
                 ]
             elif "enum" in props and props["type"] == "string":
-                from patito.duckdb import _enum_type_name
+                from humblpatito.duckdb import _enum_type_name
 
                 # fmt: off
                 valid_dtypes[column] = [  # pyright: ignore
@@ -423,7 +416,7 @@ class Model(BaseModel):
 
         Example:
             >>> from typing import Literal
-            >>> import patito as pt
+            >>> import humblpatito as pt
 
             >>> class MyModel(pt.Model):
             ...     int_column: int
@@ -455,7 +448,7 @@ class Model(BaseModel):
 
         Example:
             >>> from typing_extensions import Literal
-            >>> import patito as pt
+            >>> import humblpatito as pt
             >>> class Product(pt.Model):
             ...     name: str
             ...     price: int = 0
@@ -483,7 +476,7 @@ class Model(BaseModel):
 
         Example:
             >>> from typing import Optional
-            >>> import patito as pt
+            >>> import humblpatito as pt
             >>> class MyModel(pt.Model):
             ...     nullable_field: Optional[int]
             ...     inferred_nullable_field: int = None
@@ -512,7 +505,7 @@ class Model(BaseModel):
 
         Example:
             >>> from typing import Optional
-            >>> import patito as pt
+            >>> import humblpatito as pt
             >>> class MyModel(pt.Model):
             ...     nullable_field: Optional[int]
             ...     inferred_nullable_field: int = None
@@ -537,7 +530,7 @@ class Model(BaseModel):
 
         Example:
             >>> from typing import Optional
-            >>> import patito as pt
+            >>> import humblpatito as pt
 
             >>> class Product(pt.Model):
             ...     product_id: int = pt.Field(unique=True)
@@ -592,20 +585,20 @@ class Model(BaseModel):
         validate: bool = True,
     ) -> ModelType:
         """
-        Represent a single data frame row as a Patito model.
+        Represent a single data frame row as a humblpatito model.
 
         Args:
             row: A dataframe, either polars and pandas, consisting of a single row.
             validate: If ``False``, skip pydantic validation of the given row data.
 
         Returns:
-            Model: A patito model representing the given row data.
+            Model: A humblpatito model representing the given row data.
 
         Raises:
             TypeError: If the given type is neither a pandas or polars DataFrame.
 
         Example:
-            >>> import patito as pt
+            >>> import humblpatito as pt
             >>> import polars as pl
 
             >>> class Product(pt.Model):
@@ -659,7 +652,7 @@ class Model(BaseModel):
                 one row.
 
         Example:
-            >>> import patito as pt
+            >>> import humblpatito as pt
             >>> import polars as pl
 
             >>> class Product(pt.Model):
@@ -707,11 +700,11 @@ class Model(BaseModel):
             dataframe: Polars DataFrame to be validated.
 
         Raises:
-            patito.exceptions.ValidationError: If the given dataframe does not match
+            humblpatito.exceptions.ValidationError: If the given dataframe does not match
                 the given schema.
 
         Examples:
-            >>> import patito as pt
+            >>> import humblpatito as pt
             >>> import polars as pl
 
 
@@ -762,7 +755,7 @@ class Model(BaseModel):
 
         Example:
             >>> from typing import Literal
-            >>> import patito as pt
+            >>> import humblpatito as pt
 
             >>> class Product(pt.Model):
             ...     product_id: int = pt.Field(unique=True)
@@ -921,7 +914,7 @@ class Model(BaseModel):
 
         Example:
             >>> from typing import Literal
-            >>> import patito as pt
+            >>> import humblpatito as pt
 
             >>> class Product(pt.Model):
             ...     product_id: int = pt.Field(unique=True)
@@ -972,12 +965,12 @@ class Model(BaseModel):
 
         Raises:
             ImportError: If pandas has not been installed. You should install
-                patito[pandas] in order to integrate patito with pandas.
+                humblpatito[pandas] in order to integrate humblpatito with pandas.
             TypeError: If column names have not been specified in the input data.
 
         Example:
             >>> from typing import Literal
-            >>> import patito as pt
+            >>> import humblpatito as pt
 
             >>> class Product(pt.Model):
             ...     product_id: int = pt.Field(unique=True)
@@ -1024,7 +1017,7 @@ class Model(BaseModel):
         cls: Type[ModelType],
         data: Optional[Union[dict, Iterable]] = None,
         columns: Optional[Iterable[str]] = None,
-    ) -> "patito.polars.DataFrame":
+    ) -> "humblpatito.polars.DataFrame":
         """
         Generate polars dataframe with dummy data for all unspecified columns.
 
@@ -1048,7 +1041,7 @@ class Model(BaseModel):
 
         Example:
             >>> from typing import Literal
-            >>> import patito as pt
+            >>> import humblpatito as pt
 
             >>> class Product(pt.Model):
             ...     product_id: int = pt.Field(unique=True)
@@ -1144,7 +1137,7 @@ class Model(BaseModel):
         SQL operation making all the columns of the right table nullable.
 
         Args:
-            other: Another patito Model class.
+            other: Another humblpatito Model class.
             how: The type of SQL Join operation.
 
         Returns:
@@ -1482,7 +1475,7 @@ class Model(BaseModel):
                 if len(enum_types) > 1:
                     raise TypeError(
                         "All enumerated values of enums used to annotate "
-                        "Patito model fields must have the same type. "
+                        "humblpatito model fields must have the same type. "
                         "Encountered types: "
                         f"{sorted(map(lambda t: t.__name__, enum_types))}."
                     )
@@ -1642,7 +1635,7 @@ class FieldDoc:
 
     This class is built on ``pydantic.Field`` and you can find its full documentation
     `here <https://pydantic-docs.helpmanual.io/usage/schema/#field-customization>`_.
-    Patito adds additional parameters which are used when validating dataframes,
+    humblpatito adds additional parameters which are used when validating dataframes,
     these are documented here.
 
     Args:
@@ -1670,7 +1663,7 @@ class FieldDoc:
         field.
 
     Examples:
-        >>> import patito as pt
+        >>> import humblpatito as pt
         >>> import polars as pl
         >>> class Product(pt.Model):
         ...     # Do not allow duplicates
@@ -1694,7 +1687,7 @@ class FieldDoc:
         ... ).validate()
         Traceback (most recent call last):
           ...
-        patito.exceptions.ValidationError: 4 validation errors for Product
+        humblpatito.exceptions.ValidationError: 4 validation errors for Product
         name
           Missing column (type=type_error.missingcolumns)
         product_id

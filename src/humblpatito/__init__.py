@@ -1,10 +1,10 @@
-"""Patito, a data-modelling library built on top of polars and pydantic."""
+"""humblpatito, a data-modelling library built on top of polars and pydantic."""
 from polars import Expr, Series, col
 
-from patito import exceptions, sql
-from patito.polars import DataFrame, LazyFrame
-from patito.pydantic import Field, Model
-from patito.exceptions import DataFrameValidationError
+from humblpatito import exceptions, sql
+from humblpatito.exceptions import DataFrameValidationError
+from humblpatito.polars import DataFrame, LazyFrame
+from humblpatito.pydantic import Field, Model
 
 _CACHING_AVAILABLE = False
 _DUCKDB_AVAILABLE = False
@@ -26,7 +26,7 @@ __all__ = [
 ]
 
 try:
-    from patito import duckdb
+    from humblpatito import duckdb
 
     _DUCKDB_AVAILABLE = True
     __all__ += ["duckdb"]
@@ -34,7 +34,7 @@ except ImportError:  # pragma: no cover
     pass
 
 try:
-    from patito.database import Database
+    from humblpatito.database import Database
 
     _CACHING_AVAILABLE = True
     __all__ += ["Database"]

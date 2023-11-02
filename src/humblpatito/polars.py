@@ -7,27 +7,27 @@ from typing import (
     Collection,
     Generic,
     Iterable,
-    Optional,
+    Literal,
     Mapping,
+    Optional,
     Sequence,
     Tuple,
     Type,
     TypeVar,
     Union,
     cast,
-    Literal,
 )
 
 import polars as pl
 from polars.type_aliases import IntoExpr
 from pydantic import create_model
 
-from patito.exceptions import MultipleRowsReturned, RowDoesNotExist
+from humblpatito.exceptions import MultipleRowsReturned, RowDoesNotExist
 
 if TYPE_CHECKING:
     import numpy as np
 
-    from patito.pydantic import Model
+    from humblpatito.pydantic import Model
 
 
 DF = TypeVar("DF", bound="DataFrame")
@@ -52,7 +52,7 @@ class LazyFrame(pl.LazyFrame, Generic[ModelType]):
         DataFrame.set_model(model) is implicitly invoked at collection.
 
         Args:
-            model: A patito model which should be used to validate the final dataframe.
+            model: A humblpatito model which should be used to validate the final dataframe.
                 If None is provided, the regular LazyFrame class will be returned.
 
         Returns:
@@ -95,7 +95,7 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
     Two different methods are available for constructing model-aware data frames.
     Assume a simple model with two fields:
 
-    >>> import patito as pt
+    >>> import humblpatito as pt
     >>> class Product(pt.Model):
     ...     name: str
     ...     price_in_cents: int
@@ -131,7 +131,7 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
         DataFrame.set_model(model) is implicitly invoked at instantiation.
 
         Args:
-            model: A patito model which should be used to validate the dataframe.
+            model: A humblpatito model which should be used to validate the dataframe.
 
         Returns:
             A custom DataFrame model class where DataFrame._model has been correctly
@@ -163,7 +163,7 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
 
     def set_model(self, model):  # type: ignore[no-untyped-def] # noqa: ANN001, ANN201
         """
-        Associate a given patito ``Model`` with the dataframe.
+        Associate a given humblpatito ``Model`` with the dataframe.
 
         The model schema is used by methods that depend on a model being associated with
         the given dataframe such as :ref:`DataFrame.validate() <DataFrame.validate>`
@@ -172,7 +172,7 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
         ``DataFrame(...).set_model(Model)`` is equivalent with ``Model.DataFrame(...)``.
 
         Args:
-            model (Model): Sub-class of ``patito.Model`` declaring the schema of the
+            model (Model): Sub-class of ``humblpatito.Model`` declaring the schema of the
                 dataframe.
 
         Returns:
@@ -181,7 +181,7 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
 
         Examples:
             >>> from typing_extensions import Literal
-            >>> import patito as pt
+            >>> import humblpatito as pt
             >>> import polars as pl
             >>> class SchoolClass(pt.Model):
             ...     year: int = pt.Field(dtype=pl.UInt16)
@@ -225,7 +225,7 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
 
     def cast(self: DF, strict: bool = False) -> DF:
         """
-        Cast columns to `dtypes` specified by the associated Patito model.
+        Cast columns to `dtypes` specified by the associated humblpatito model.
 
         Args:
             strict: If set to ``False``, columns which are technically compliant with
@@ -241,7 +241,7 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
         Examples:
             Create a simple model:
 
-            >>> import patito as pt
+            >>> import humblpatito as pt
             >>> import polars as pl
             >>> class Product(pt.Model):
             ...     name: str
@@ -284,7 +284,7 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
         Drop one or more columns from the dataframe.
 
         If ``name`` is not provided then all columns `not` specified by the associated
-        patito model, for instance set with
+        humblpatito model, for instance set with
         :ref:`DataFrame.set_model <DataFrame.set_model>`, are dropped.
 
         Args:
@@ -297,7 +297,7 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
             DataFrame[Model]: New dataframe without the specified columns.
 
         Examples:
-            >>> import patito as pt
+            >>> import humblpatito as pt
             >>> class Model(pt.Model):
             ...     column_1: int
             ...
@@ -330,14 +330,14 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
 
         Raises:
             TypeError: If ``DataFrame.set_model()`` has not been invoked prior to
-                validation. Note that ``patito.Model.DataFrame`` automatically invokes
+                validation. Note that ``humblpatito.Model.DataFrame`` automatically invokes
                 ``DataFrame.set_model()`` for you.
 
-            patito.exceptions.ValidationError: If the dataframe does not match the
+            humblpatito.exceptions.ValidationError: If the dataframe does not match the
                 specified schema.
 
         Examples:
-            >>> import patito as pt
+            >>> import humblpatito as pt
 
 
             >>> class Product(pt.Model):
@@ -377,7 +377,7 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
         """
         Populate columns which have ``pt.Field(derived_from=...)`` definitions.
 
-        If a column field on the data frame model has ``patito.Field(derived_from=...)``
+        If a column field on the data frame model has ``humblpatito.Field(derived_from=...)``
         specified, the given value will be used to define the column. If
         ``derived_from`` is set to a string, the column will be derived from the given
         column name. Alternatively, an arbitrary polars expression can be given, the
@@ -387,11 +387,11 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
             DataFrame[Model]: A new dataframe where all derivable columns are provided.
 
         Raises:
-            TypeError: If the ``derived_from`` parameter of ``patito.Field`` is given
+            TypeError: If the ``derived_from`` parameter of ``humblpatito.Field`` is given
                 as something else than a string or polars expression.
 
         Examples:
-            >>> import patito as pt
+            >>> import humblpatito as pt
             >>> import polars as pl
             >>> class Foo(pt.Model):
             ...     bar: int = pt.Field(derived_from="foo")
@@ -431,7 +431,9 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
         props = self.model._schema_properties()
         for column_name in props.keys():
             if column_name not in derived_columns:
-                df, _derived_columns = self._derive_column(df, column_name, props)
+                df, _derived_columns = self._derive_column(
+                    df, column_name, props
+                )
                 derived_columns.extend(_derived_columns)
         return cast(DF, df.select(props.keys()).collect())
 
@@ -445,7 +447,9 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
         dtype = self.model.dtypes[column_name]
         derived_columns = []
         if isinstance(derived_from, str):
-            df = df.with_columns(pl.col(derived_from).cast(dtype).alias(column_name))
+            df = df.with_columns(
+                pl.col(derived_from).cast(dtype).alias(column_name)
+            )
         elif isinstance(derived_from, pl.Expr):
             root_cols = derived_from.meta.root_names()
             while root_cols:
@@ -455,7 +459,8 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
             df = df.with_columns(derived_from.cast(dtype).alias(column_name))
         else:
             raise TypeError(
-                "Can not derive dataframe column from type " f"{type(derived_from)}."
+                "Can not derive dataframe column from type "
+                f"{type(derived_from)}."
             )
         derived_columns.append(column_name)
         return df, derived_columns
@@ -465,7 +470,14 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
         value: Optional[Any] = None,
         strategy: Optional[
             Literal[
-                "forward", "backward", "min", "max", "mean", "zero", "one", "defaults"
+                "forward",
+                "backward",
+                "min",
+                "max",
+                "mean",
+                "zero",
+                "one",
+                "defaults",
             ]
         ] = None,
         limit: Optional[int] = None,
@@ -492,7 +504,7 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
             provided ``strategy`` parameter.
 
         Example:
-            >>> import patito as pt
+            >>> import humblpatito as pt
             >>> class Product(pt.Model):
             ...     name: str
             ...     price: int = 19
@@ -552,7 +564,7 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
             Model: A pydantic-derived base model representing the given row.
 
         Example:
-            >>> import patito as pt
+            >>> import humblpatito as pt
             >>> import polars as pl
             >>> df = pt.DataFrame({"product_id": [1, 2, 3], "price": [10, 10, 20]})
 
@@ -562,7 +574,7 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
             >>> df.get(pl.col("product_id") == 1)
             UntypedRow(product_id=1, price=10)
 
-            If a Patito model has been associated with the dataframe, by the use of
+            If a humblpatito model has been associated with the dataframe, by the use of
             :ref:`DataFrame.set_model()<DataFrame.set_model>`, then the given model will
             be used to represent the return type:
 
@@ -601,7 +613,9 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
         """
         row = self if predicate is None else self.filter(predicate)
         if row.height == 0:
-            raise RowDoesNotExist(f"{self.__class__.__name__}.get() yielded 0 rows.")
+            raise RowDoesNotExist(
+                f"{self.__class__.__name__}.get() yielded 0 rows."
+            )
         if row.height > 1:
             raise MultipleRowsReturned(
                 f"{self.__class__.__name__}.get() yielded {row.height} rows."
@@ -614,13 +628,13 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
 
     def _pydantic_model(self) -> Type[Model]:
         """
-        Dynamically construct patito model compliant with dataframe.
+        Dynamically construct humblpatito model compliant with dataframe.
 
         Returns:
             A pydantic model class where all the rows have been specified as
                 `typing.Any` fields.
         """
-        from patito.pydantic import Model
+        from humblpatito.pydantic import Model
 
         pydantic_annotations = {column: (Any, ...) for column in self.columns}
         return cast(
@@ -656,7 +670,7 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
             correct column names when reading CSV files without headers.
 
             >>> import io
-            >>> import patito as pt
+            >>> import humblpatito as pt
             >>> class CSVModel(pt.Model):
             ...     a: float
             ...     b: str
@@ -677,7 +691,7 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
             you intend to construct.
 
             >>> import io
-            >>> import patito as pt
+            >>> import humblpatito as pt
             >>> class CSVModel(pt.Model):
             ...     a: float
             ...     b: str = pt.Field(derived_from="source_of_b")
@@ -703,7 +717,7 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
 
     @classmethod
     def from_existing(cls, df: pl.DataFrame):
-        """Constructs a patito.DataFrame object from an existing polars.DataFrame object"""
+        """Constructs a humblpatito.DataFrame object from an existing polars.DataFrame object"""
         return cls.model.DataFrame._from_pydf(df._df).cast()
 
     # --- Type annotation overrides ---

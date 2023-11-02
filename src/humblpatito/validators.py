@@ -6,14 +6,14 @@ from typing import TYPE_CHECKING, Type, Union, cast, get_args, get_origin
 
 import polars as pl
 
-from patito.exceptions import (
+from humblpatito.exceptions import (
     ColumnDTypeError,
+    DataFrameValidationError,
     ErrorWrapper,
     MissingColumnsError,
     MissingValuesError,
     RowValueError,
     SuperflousColumnsError,
-    DataFrameValidationError,
 )
 
 if sys.version_info >= (3, 10):  # pragma: no cover
@@ -31,7 +31,7 @@ except ImportError:
     _PANDAS_AVAILABLE = False
 
 if TYPE_CHECKING:
-    from patito import Model
+    from humblpatito import Model
 
 
 VALID_POLARS_TYPES = {
@@ -99,10 +99,10 @@ def _find_errors(  # noqa: C901
 
     Args:
         dataframe: Polars DataFrame to be validated.
-        schema: Patito model which specifies how the dataframe should be structured.
+        schema: humblpatito model which specifies how the dataframe should be structured.
 
     Returns:
-        A list of patito.exception.ErrorWrapper instances. The specific validation
+        A list of humblpatito.exception.ErrorWrapper instances. The specific validation
         error can be retrieved from the "exc" attribute on each error wrapper instance.
 
         MissingColumnsError: If there are any missing columns.
@@ -225,7 +225,9 @@ def _find_errors(  # noqa: C901
             if num_duplicated > 0:
                 errors.append(
                     ErrorWrapper(
-                        RowValueError(f"{num_duplicated} rows with duplicated values."),
+                        RowValueError(
+                            f"{num_duplicated} rows with duplicated values."
+                        ),
                         loc=column_name,
                     )
                 )
@@ -302,7 +304,7 @@ def validate(
 
     Args:
         dataframe: Polars DataFrame to be validated.
-        schema: Patito model which specifies how the dataframe should be structured.
+        schema: humblpatito model which specifies how the dataframe should be structured.
 
     Raises:
         ValidationError: If the given dataframe does not match the given schema.
