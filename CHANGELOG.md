@@ -1,3 +1,9 @@
+## v0.7.3 (2023-11-02)
+
+### Refactor
+
+- **renaming**: changing`patito` references to `humblpatito`
+
 ## v0.7.2 (2023-11-02)
 
 ### Fix
