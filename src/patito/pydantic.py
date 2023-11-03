@@ -216,7 +216,8 @@ class Model(BaseModel):
                     f"No valid dtype mapping found for column '{column}'."
                 )
             return [pl.List(dtype) for dtype in item_dtypes]
-        if "dtype" in props:
+
+        if "dtype" in props and "anyOf" not in props:
             return [
                 props["dtype"],
             ]
@@ -1454,15 +1455,6 @@ class Model(BaseModel):
                 field_name,
                 model_schema,
             )
-        if "anyOf" in field_info:
-            field["anyOf"] = [
-                cls._append_field_info_to_props(
-                    f,
-                    field_name,
-                    model_schema,
-                )
-                for f in field_info["anyOf"]
-            ]
         if required is not None:
             field["required"] = required
         if "const" in field_info and "type" not in field_info:
