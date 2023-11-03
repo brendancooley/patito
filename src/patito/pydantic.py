@@ -218,6 +218,12 @@ class Model(BaseModel):
             return [pl.List(dtype) for dtype in item_dtypes]
 
         if "dtype" in props and "anyOf" not in props:
+            if props["dtype"] not in cls._pydantic_type_to_valid_polars_types(
+                props
+            ):  # TODO should we allow pl floats for integer columns? Other type hierarchies to consider?
+                raise ValueError(
+                    f"Invalid dtype {props['dtype']} for column '{column}'. Check that specified dtype is allowable for the given type annotations."
+                )
             return [
                 props["dtype"],
             ]
@@ -235,7 +241,14 @@ class Model(BaseModel):
                     column, {"type": PYTHON_TO_PYDANTIC_TYPES.get(type(props["const"]))}
                 )
             return None
-        elif props["type"] == "integer":
+
+        return cls._pydantic_type_to_valid_polars_types(props)
+
+    @staticmethod
+    def _pydantic_type_to_valid_polars_types(
+        props: Dict,
+    ) -> Optional[List[pl.DataType]]:
+        if props["type"] == "integer":
             return PL_INTEGER_DTYPES
         elif props["type"] == "number":
             if props.get("format") == "time-delta":
