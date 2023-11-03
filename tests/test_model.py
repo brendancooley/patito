@@ -505,14 +505,14 @@ def test_nullable_columns():
 
 
 def test_conflicting_type_dtype():
-    class Test(pt.Model):
+    class Test1(pt.Model):
         foo: int = pt.Field(dtype=pl.Utf8)
 
     with pytest.raises(ValueError):
-        Test.valid_dtypes()
+        Test1.valid_dtypes
 
-    class Test(pt.Model):
+    class Test2(pt.Model):
         foo: str = pt.Field(dtype=pl.Float32)
 
     with pytest.raises(ValueError):
-        Test.valid_dtypes()
+        Test2.valid_dtypes
