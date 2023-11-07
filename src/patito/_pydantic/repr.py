@@ -12,6 +12,7 @@ from typing import (
     get_origin,
     get_args,
     Literal,
+    Type,
 )
 import sys
 
@@ -37,7 +38,7 @@ else:
 
 if sys.version_info < (3, 10):
 
-    def origin_is_union(tp: type[Any] | None) -> bool:
+    def origin_is_union(tp: Optional[Type[Any]]) -> bool:
         return tp is typing.Union
 
     WithArgsTypes = (TypingGenericAlias,)
