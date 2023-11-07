@@ -2,7 +2,7 @@
 # pyright: reportPrivateImportUsage=false
 import enum
 import re
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, time
 from typing import List, Optional, Type, Literal, Sequence
 
 import polars as pl
@@ -545,8 +545,10 @@ def test_conflicting_type_dtype():
 def test_polars_python_type_harmonization():
     class Test(pt.Model):
         date: datetime = pt.Field(dtype=pl.Datetime(time_unit="us"))
-        # TODO add more other lesser-used type combinations here
+        time: time
 
-    assert type(Test.valid_dtypes["date"][0]) == pl.Datetime
+    assert Test.valid_dtypes["date"] == [pl.Datetime]
     assert Test.valid_dtypes["date"][0].time_unit == "us"
     assert Test.valid_dtypes["date"][0].time_zone == None
+
+    assert Test.valid_dtypes["time"] == [pl.Time]
