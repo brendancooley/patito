@@ -318,6 +318,8 @@ class Model(BaseModel, metaclass=ModelMetaclass):
             # TODO: Find out why this branch is not being hit
             elif string_format == "date-time":  # pragma: no cover
                 return [pl.Datetime]
+            elif string_format == "time":
+                return [pl.Time]
             elif string_format == "duration":
                 return [pl.Duration]
             elif string_format.startswith("uuid"):
