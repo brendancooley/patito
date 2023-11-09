@@ -94,6 +94,7 @@ def _find_errors(  # noqa: C901
     dataframe: pl.DataFrame,
     schema: Type[Model],
     allow_missing_columns: bool = False,
+    allow_superflous_columns: bool = False,
 ) -> list[ErrorWrapper]:
     """
     Validate the given dataframe.
@@ -102,6 +103,7 @@ def _find_errors(  # noqa: C901
         dataframe: Polars DataFrame to be validated.
         schema: Patito model which specifies how the dataframe should be structured.
         allow_missing_columns: If True, missing columns will not be considered an error.
+        allow_superflous_columns: If True, additional columns will not be considered an error.
 
     Returns:
         A list of patito.exception.ErrorWrapper instances. The specific validation
@@ -125,14 +127,15 @@ def _find_errors(  # noqa: C901
                 )
             )
 
-    # Check if any additional columns are included
-    for superflous_column in set(dataframe.columns) - set(schema.columns):
-        errors.append(
-            ErrorWrapper(
-                SuperflousColumnsError("Superflous column"),
-                loc=superflous_column,
+    if not allow_superflous_columns:
+        # Check if any additional columns are included
+        for superflous_column in set(dataframe.columns) - set(schema.columns):
+            errors.append(
+                ErrorWrapper(
+                    SuperflousColumnsError("Superflous column"),
+                    loc=superflous_column,
+                )
             )
-        )
 
     # Check if any non-optional columns have null values
     for column in schema.non_nullable_columns.intersection(dataframe.columns):
@@ -313,6 +316,7 @@ def validate(
     dataframe: Union["pd.DataFrame", pl.DataFrame],
     schema: Type[Model],
     allow_missing_columns: bool = False,
+    allow_superflous_columns: bool = False,
 ) -> None:
     """
     Validate the given dataframe.
@@ -321,6 +325,7 @@ def validate(
         dataframe: Polars DataFrame to be validated.
         schema: Patito model which specifies how the dataframe should be structured.
         allow_missing_columns: If True, missing columns will not be considered an error.
+        allow_superflous_columns: If True, additional columns will not be considered an error.
 
     Raises:
         ValidationError: If the given dataframe does not match the given schema.
@@ -334,6 +339,7 @@ def validate(
         dataframe=polars_dataframe,
         schema=schema,
         allow_missing_columns=allow_missing_columns,
+        allow_superflous_columns=allow_superflous_columns,
     )
     if errors:
         raise DataFrameValidationError(errors=errors, model=schema)
