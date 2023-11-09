@@ -432,13 +432,13 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
         df = self.lazy()
         derived_columns = []
         props = self.model._schema_properties()
-        original_columns = df.columns
-        to_derive = list(props.keys()) if columns is None else columns
+        original_columns = set(df.columns)
+        to_derive = self.model.derived_columns if columns is None else columns
         for column_name in to_derive:
             if column_name not in derived_columns:
                 df, _derived_columns = self._derive_column(df, column_name, props)
                 derived_columns.extend(_derived_columns)
-        out_cols = [x for x in props if x in original_columns + to_derive]
+        out_cols = [x for x in props if x in original_columns.union(to_derive)]
         return cast(DF, df.select(out_cols).collect())
 
     def _derive_column(
