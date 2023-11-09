@@ -73,6 +73,18 @@ def test_missing_column_validation():
         },
     ]
 
+    df_missing_column_2 = pl.DataFrame({"column_1": [1, 2, 3]})
+    with pytest.raises(DataFrameValidationError) as e_info:
+        validate(dataframe=df_missing_column_2, schema=SingleColumnModel)
+    validate(
+        dataframe=df_missing_column_2,
+        schema=SingleColumnModel,
+        allow_missing_columns=True,
+    )  # does not raise when allow_missing_columns=True
+    SingleColumnModel.validate(
+        df_missing_column_2, allow_missing_columns=True
+    )  # kwargs are passed via model-centric validation API
+
 
 def test_superflous_column_validation():
     """Validation should catch superflous columns."""
