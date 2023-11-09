@@ -759,10 +759,7 @@ class Model(BaseModel, metaclass=ModelMetaclass):
             return cls.model_construct(**dataframe.to_dicts()[0])
 
     @classmethod
-    def validate(
-        cls,
-        dataframe: Union["pd.DataFrame", pl.DataFrame],
-    ) -> None:
+    def validate(cls, dataframe: Union["pd.DataFrame", pl.DataFrame], **kwargs) -> None:
         """
         Validate the schema and content of the given dataframe.
 
@@ -803,7 +800,7 @@ class Model(BaseModel, metaclass=ModelMetaclass):
             temperature_zone
               Rows with invalid values: {'oven'}. (type=value_error.rowvalue)
         """
-        validate(dataframe=dataframe, schema=cls)
+        validate(dataframe=dataframe, schema=cls, **kwargs)
 
     @classmethod
     def example_value(  # noqa: C901

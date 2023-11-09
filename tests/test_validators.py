@@ -73,6 +73,18 @@ def test_missing_column_validation():
         },
     ]
 
+    df_missing_column_2 = pl.DataFrame({"column_1": [1, 2, 3]})
+    with pytest.raises(DataFrameValidationError) as e_info:
+        validate(dataframe=df_missing_column_2, schema=SingleColumnModel)
+    validate(
+        dataframe=df_missing_column_2,
+        schema=SingleColumnModel,
+        allow_missing_columns=True,
+    )  # does not raise when allow_missing_columns=True
+    SingleColumnModel.validate(
+        df_missing_column_2, allow_missing_columns=True
+    )  # kwargs are passed via model-centric validation API
+
 
 def test_superflous_column_validation():
     """Validation should catch superflous columns."""
@@ -81,14 +93,15 @@ def test_superflous_column_validation():
         column_1: int
 
     # We raise an error because we have added column_2
+    test_df = pl.DataFrame().with_columns(
+        [
+            pl.lit(1).alias("column_1"),
+            pl.lit(2).alias("column_2"),
+        ]
+    )
     with pytest.raises(DataFrameValidationError) as e_info:
         validate(
-            dataframe=pl.DataFrame().with_columns(
-                [
-                    pl.lit(1).alias("column_1"),
-                    pl.lit(2).alias("column_2"),
-                ]
-            ),
+            dataframe=test_df,
             schema=SingleColumnModel,
         )
 
@@ -99,6 +112,13 @@ def test_superflous_column_validation():
         "msg": "Superflous column",
         "type": "type_error.superflouscolumns",
     }
+
+    validate(
+        test_df, SingleColumnModel, allow_superflous_columns=True
+    )  # does not raise
+    SingleColumnModel.validate(
+        test_df, allow_superflous_columns=True
+    )  # model-centric API also works
 
 
 def test_validate_non_nullable_columns():
