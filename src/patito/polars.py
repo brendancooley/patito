@@ -373,7 +373,7 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
         self.model.validate(dataframe=self)
         return self
 
-    def derive(self: DF) -> DF:
+    def derive(self: DF, columns: list[str] | None = None) -> DF:
         """
         Populate columns which have ``pt.Field(derived_from=...)`` definitions.
 
@@ -382,6 +382,9 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
         ``derived_from`` is set to a string, the column will be derived from the given
         column name. Alternatively, an arbitrary polars expression can be given, the
         result of which will be used to populate the column values.
+
+        Arguments:
+            columns: A list of columns to derive. If not specified, all columns with `derived_from` definitions will be derived.
 
         Returns:
             DataFrame[Model]: A new dataframe where all derivable columns are provided.
@@ -429,11 +432,14 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
         df = self.lazy()
         derived_columns = []
         props = self.model._schema_properties()
-        for column_name in props.keys():
+        original_columns = df.columns
+        to_derive = list(props.keys()) if columns is None else columns
+        for column_name in to_derive:
             if column_name not in derived_columns:
                 df, _derived_columns = self._derive_column(df, column_name, props)
                 derived_columns.extend(_derived_columns)
-        return cast(DF, df.select([x for x in props if x in df.columns]).collect())
+        out_cols = [x for x in props if x in set(original_columns + to_derive)]
+        return cast(DF, df.select(out_cols).collect())
 
     def _derive_column(
         self, df: "LDF", column_name: str, props: Mapping[str, Any]

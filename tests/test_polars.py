@@ -286,6 +286,26 @@ def test_recursive_derive():
     assert derived_df.frame_equal(correct_derived_df)
 
 
+def test_derive_subset():
+    class DerivedModel(pt.Model):
+        underived: int
+        derived: Optional[int] = pt.Field(default=None, derived_from="underived")
+        expr_derived: int = pt.Field(
+            derived_from=2 * pl.col("derived")
+        )  # depends on derived
+
+    df = DerivedModel.DataFrame({"underived": [1, 2]})
+    correct_derived_df = DerivedModel.DataFrame(
+        {
+            "underived": [1, 2],
+            "expr_derived": [2, 4],
+        }
+    )
+    assert df.derive(columns=["expr_derived"]).frame_equal(
+        correct_derived_df
+    )  # only include "expr_derived" in output, but ensure that "derived" was derived recursively
+
+
 def test_derive_on_defaults():
     class DerivedModel(pt.Model):
         underived: int
