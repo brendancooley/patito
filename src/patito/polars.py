@@ -438,7 +438,7 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
             if column_name not in derived_columns:
                 df, _derived_columns = self._derive_column(df, column_name, props)
                 derived_columns.extend(_derived_columns)
-        out_cols = [x for x in props if x in set(original_columns + to_derive)]
+        out_cols = [x for x in props if x in original_columns + to_derive]
         return cast(DF, df.select(out_cols).collect())
 
     def _derive_column(
