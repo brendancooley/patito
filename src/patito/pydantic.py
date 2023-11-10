@@ -23,7 +23,7 @@ from typing import (
     Callable,
     Mapping,
 )
-from functools import reduce
+from functools import reduce, lru_cache
 import inspect
 
 import polars as pl
@@ -168,7 +168,7 @@ class Model(BaseModel, metaclass=ModelMetaclass):
             >>> Product.columns
             ['name', 'price']
         """
-        return list(cls.model_json_schema()["properties"].keys())
+        return list(cls._schema_properties().keys())
 
     @classproperty
     def dtypes(  # type: ignore
@@ -1497,9 +1497,10 @@ class Model(BaseModel, metaclass=ModelMetaclass):
             pass
 
     @classmethod
+    @lru_cache
     def _schema_properties(cls) -> Dict[str, Any]:
         schema = cls.schema()
-        return cls.schema()["properties"]
+        return schema["properties"]
 
     @classmethod
     def _append_field_info_to_props(

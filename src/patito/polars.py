@@ -438,7 +438,12 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
             if column_name not in derived_columns:
                 df, _derived_columns = self._derive_column(df, column_name, props)
                 derived_columns.extend(_derived_columns)
-        out_cols = [x for x in props if x in original_columns.union(to_derive)]
+        out_cols = [
+            x for x in props if x in original_columns.union(to_derive)
+        ]  # ensure that model columns are first and in the correct order
+        out_cols += [
+            x for x in original_columns.union(to_derive) if x not in out_cols
+        ]  # collect columns originally in data frame that are not in the model and append to end of df
         return cast(DF, df.select(out_cols).collect())
 
     def _derive_column(
