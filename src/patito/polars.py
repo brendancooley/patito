@@ -449,8 +449,8 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
     def _derive_column(
         self, df: "LDF", column_name: str, props: Mapping[str, Any]
     ) -> Tuple["LDF", Sequence[str]]:
-        props_col = props[column_name]
-        if "derived_from" not in props_col:
+        props_col = props.get(column_name, None)
+        if props_col is None or "derived_from" not in props_col:
             return df, []
         derived_from = props_col["derived_from"]
         dtype = self.model.dtypes[column_name]
