@@ -87,6 +87,48 @@ class LazyFrame(pl.LazyFrame, Generic[ModelType]):
             cls = DataFrame
         return cls._from_pydf(df._df)
 
+    def derive(self: LDF, columns: list[str] | None = None) -> LDF:
+        derived_columns = []
+        props = self.model._schema_properties()
+        original_columns = set(self.columns)
+        to_derive = self.model.derived_columns if columns is None else columns
+        for column_name in to_derive:
+            if column_name not in derived_columns:
+                self, _derived_columns = self._derive_column(self, column_name, props)
+                derived_columns.extend(_derived_columns)
+        out_cols = [
+            x for x in props if x in original_columns.union(to_derive)
+        ]  # ensure that model columns are first and in the correct order
+        out_cols += [
+            x for x in original_columns.union(to_derive) if x not in out_cols
+        ]  # collect columns originally in data frame that are not in the model and append to end of df
+        return self.select(out_cols)
+
+    def _derive_column(
+        self, df: LDF, column_name: str, props: Mapping[str, Any]
+    ) -> Tuple[LDF, Sequence[str]]:
+        props_col = props.get(column_name, None)
+        if props_col is None or "derived_from" not in props_col:
+            return df, []
+        derived_from = props_col["derived_from"]
+        dtype = self.model.dtypes[column_name]
+        derived_columns = []
+        if isinstance(derived_from, str):
+            df = df.with_columns(pl.col(derived_from).cast(dtype).alias(column_name))
+        elif isinstance(derived_from, pl.Expr):
+            root_cols = derived_from.meta.root_names()
+            while root_cols:
+                root_col = root_cols.pop()
+                df, _derived_columns = self._derive_column(df, root_col, props)
+                derived_columns.extend(_derived_columns)
+            df = df.with_columns(derived_from.cast(dtype).alias(column_name))
+        else:
+            raise TypeError(
+                "Can not derive dataframe column from type " f"{type(derived_from)}."
+            )
+        derived_columns.append(column_name)
+        return df, derived_columns
+
 
 class DataFrame(pl.DataFrame, Generic[ModelType]):
     """
@@ -429,47 +471,7 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
             └─────┴─────┴──────────┴────────────┘
 
         """
-        df = self.lazy()
-        derived_columns = []
-        props = self.model._schema_properties()
-        original_columns = set(df.columns)
-        to_derive = self.model.derived_columns if columns is None else columns
-        for column_name in to_derive:
-            if column_name not in derived_columns:
-                df, _derived_columns = self._derive_column(df, column_name, props)
-                derived_columns.extend(_derived_columns)
-        out_cols = [
-            x for x in props if x in original_columns.union(to_derive)
-        ]  # ensure that model columns are first and in the correct order
-        out_cols += [
-            x for x in original_columns.union(to_derive) if x not in out_cols
-        ]  # collect columns originally in data frame that are not in the model and append to end of df
-        return cast(DF, df.select(out_cols).collect())
-
-    def _derive_column(
-        self, df: "LDF", column_name: str, props: Mapping[str, Any]
-    ) -> Tuple["LDF", Sequence[str]]:
-        props_col = props.get(column_name, None)
-        if props_col is None or "derived_from" not in props_col:
-            return df, []
-        derived_from = props_col["derived_from"]
-        dtype = self.model.dtypes[column_name]
-        derived_columns = []
-        if isinstance(derived_from, str):
-            df = df.with_columns(pl.col(derived_from).cast(dtype).alias(column_name))
-        elif isinstance(derived_from, pl.Expr):
-            root_cols = derived_from.meta.root_names()
-            while root_cols:
-                root_col = root_cols.pop()
-                df, _derived_columns = self._derive_column(df, root_col, props)
-                derived_columns.extend(_derived_columns)
-            df = df.with_columns(derived_from.cast(dtype).alias(column_name))
-        else:
-            raise TypeError(
-                "Can not derive dataframe column from type " f"{type(derived_from)}."
-            )
-        derived_columns.append(column_name)
-        return df, derived_columns
+        return cast(DF, self.lazy().derive(columns=columns).collect())
 
     def fill_null(
         self: DF,

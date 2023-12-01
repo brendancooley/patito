@@ -7,7 +7,7 @@ import polars as pl
 import pytest
 
 import patito as pt
-from pydantic import BaseModel, UUID4
+from pydantic import UUID4
 
 
 def test_model_example_df():
