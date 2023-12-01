@@ -11,7 +11,6 @@ from typing import (
     Dict,
     List,
     Optional,
-    Set,
     Type,
     TypeVar,
     Union,
@@ -48,7 +47,6 @@ except ImportError:
 if TYPE_CHECKING:
     import patito.polars
     from patito.duckdb import DuckDBSQLType
-    from pydantic.typing import CallableGenerator
 
 # The generic type of a single row in given Relation.
 # Should be a typed subclass of Model.
@@ -1469,11 +1467,7 @@ class Model(BaseModel, metaclass=ModelMetaclass):
         """
         schema = cls.model_json_schema(ref_template="{model}")
         fields = {}
-        for (
-            f
-        ) in (
-            cls.model_fields.values()
-        ):  # first resolve definitions for nested models TODO checks for one-way references, if models are self-referencing this falls apart with recursion depth error
+        for f in cls.model_fields.values():  # first resolve definitions for nested models TODO checks for one-way references, if models are self-referencing this falls apart with recursion depth error
             annotation = f.annotation
             cls._update_dfn(annotation, schema)
             for a in get_args(annotation):

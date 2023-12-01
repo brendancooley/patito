@@ -301,7 +301,9 @@ def test_derive_subset():
             "expr_derived": [2, 4],
         }
     )
-    assert df.derive(columns=["expr_derived"]).frame_equal(
+    assert df.derive(
+        columns=["expr_derived"]
+    ).frame_equal(
         correct_derived_df
     )  # only include "expr_derived" in output, but ensure that "derived" was derived recursively
 
@@ -321,6 +323,26 @@ def test_derive_on_defaults():
         }
     )
     assert derived_df.frame_equal(correct_derived_df)
+
+
+def test_lazy_derive():
+    class DerivedModel(pt.Model):
+        underived: int
+        derived: Optional[int] = pt.Field(default=None, derived_from="underived")
+
+    ldf = DerivedModel.DataFrame({"underived": [1, 2]}).lazy()
+    assert ldf.columns == ["underived"]
+    derived_ldf = ldf.derive()
+    assert derived_ldf.columns == ["underived", "derived"]
+    df = derived_ldf.collect()
+
+    correct_derived_df = DerivedModel.DataFrame(
+        {
+            "underived": [1, 2],
+            "derived": [1, 2],
+        }
+    )
+    assert df.frame_equal(correct_derived_df)
 
 
 def test_drop_method():
