@@ -129,6 +129,22 @@ class LazyFrame(pl.LazyFrame, Generic[ModelType]):
         derived_columns.append(column_name)
         return df, derived_columns
 
+    def cast(self: LDF, strict: bool = False) -> LDF:
+        properties = self.model._schema_properties()
+        valid_dtypes = self.model.valid_dtypes
+        default_dtypes = self.model.dtypes
+        columns = []
+        for column, current_dtype in zip(self.columns, self.dtypes):
+            if column not in properties:
+                columns.append(pl.col(column))
+            elif "dtype" in properties[column]:
+                columns.append(pl.col(column).cast(properties[column]["dtype"]))
+            elif not strict and current_dtype in valid_dtypes[column]:
+                columns.append(pl.col(column))
+            else:
+                columns.append(pl.col(column).cast(default_dtypes[column]))
+        return self.with_columns(columns)
+
 
 class DataFrame(pl.DataFrame, Generic[ModelType]):
     """
@@ -302,20 +318,7 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
             │ apple ┆ 8          │
             └───────┴────────────┘
         """
-        properties = self.model._schema_properties()
-        valid_dtypes = self.model.valid_dtypes
-        default_dtypes = self.model.dtypes
-        columns = []
-        for column, current_dtype in zip(self.columns, self.dtypes):
-            if column not in properties:
-                columns.append(pl.col(column))
-            elif "dtype" in properties[column]:
-                columns.append(pl.col(column).cast(properties[column]["dtype"]))
-            elif not strict and current_dtype in valid_dtypes[column]:
-                columns.append(pl.col(column))
-            else:
-                columns.append(pl.col(column).cast(default_dtypes[column]))
-        return self.with_columns(columns)
+        return self.lazy().cast(strict=strict).collect()
 
     def drop(
         self: DF,
